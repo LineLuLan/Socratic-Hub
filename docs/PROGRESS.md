@@ -10,11 +10,11 @@
 
 **Milestone hiện tại:** M1 — "Hello Socratic"
 **Sprint trong milestone:** Sprint 0 — Init
-**Feature đang build:** (S0-01 done — chờ PR review, next: S0-02 + S0-03 song song)
-**Branch hiện tại:** chore/init-monorepo (PR pending)
-**Last commit on main:** `4a66f80` docs: baseline blueprint + project conventions + skill audit
-**Last updated:** 2026-04-26
-**Last updated by:** Claude session #1 (post-P1 planning)
+**Feature đang build:** (S0-02 done — chờ PR review, next: S0-03 Prisma full schema)
+**Branch hiện tại:** chore/setup-database-connection (PR pending)
+**Last commit on main:** `74532a5` Merge pull request #3 (S0-01 + baseline)
+**Last updated:** 2026-04-26 (session #2)
+**Last updated by:** Claude session #2
 
 **Sprint 0 execution sequence (tối ưu):**
 S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
@@ -76,14 +76,11 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
   - Files: `package.json`, `turbo.json`, `pnpm-workspace.yaml`, `.npmrc`, `apps/web/` (Next.js 14 + Tailwind), `apps/api/` (NestJS minimal)
   - Verify: `pnpm verify` 8/8 tasks pass (lint + typecheck + test + build × 2 apps)
 
-- [ ]  S0-02 chore/setup-database-connection — Setup Neon connection + .env structure
-- Acceptance:
-  - .env.example có DATABASE_URL placeholder
-  - .env (gitignored) có Neon connection string thật
-  - apps/api kết nối được Neon (Prisma db push thành công)
-- Files: .env.example, .gitignore, README.md (setup section)
-- KHÔNG setup Redis (defer tới S4-02)
-- KHÔNG dùng Docker
+- [x] **S0-02** `chore/setup-database-connection` — Setup Neon connection + .env structure ✅ DONE 2026-04-26
+  - Acceptance: ✅ .env.example DATABASE_URL placeholder ✅ .env Neon string ✅ Prisma db push OK ("database is already in sync")
+  - Files: `apps/api/prisma/schema.prisma`, `apps/api/src/config/env.schema.ts`, `apps/api/src/app.module.ts` (ConfigModule + Zod validate), `apps/api/src/app.controller.ts` (env-aware health), `README.md` (DB setup section)
+  - Smoke: `db:check` → `[ { ok: 1 } ]`, `/health` → `databaseConfigured: true`
+  - Stack: Prisma 6.19.3 (downgrade từ 7 vì 7 đổi schema config sang prisma.config.ts), @nestjs/config 4, zod 4, dotenv-cli 11
 
 - [ ] **S0-03** `chore/setup-prisma` — Init Prisma, copy schema mục 4 BLUEPRINT
   - Acceptance: `npx prisma migrate dev` thành công, generate client OK
@@ -157,7 +154,8 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 
 > Format mỗi entry: `[ID] branch — date — PR# — 1 dòng tóm tắt — token spend (input/output)`
 
-- **S0-01** `chore/init-monorepo` — 2026-04-26 — PR# (pending) — Turborepo + pnpm workspace, apps/web (Next.js 14 + Tailwind), apps/api (NestJS minimal với /health), pnpm verify 8/8 pass — token: ~50K/~18K
+- **S0-01** `chore/init-monorepo` — 2026-04-26 — PR #1 — Turborepo + pnpm workspace, apps/web (Next.js 14 + Tailwind), apps/api (NestJS minimal với /health), pnpm verify 8/8 pass — token: ~50K/~18K
+- **S0-02** `chore/setup-database-connection` — 2026-04-26 — PR# (pending) — ConfigModule + Zod env validation, Prisma 6.19 scaffold, dotenv-cli wrapper cho monorepo .env, Neon connection verified (DB OK [{ok:1}]) — token: ~30K/~10K
 
 ---
 
@@ -192,6 +190,8 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 | 2026-04-26 | Monorepo scope cho S0-01: 4 apps (BLUEPRINT §3.2) hay 2 apps? | **2 apps M1**: `apps/web` + `apps/api`. Sandbox-orchestrator + tutor-worker + llm-proxy gộp module trong `apps/api` | Giảm complexity ops, cùng codebase. Tách app khi scale M2+. Alternative: 4 apps full spec → tốn time setup, không cần thiết M1. |
 | 2026-04-26 | LLM provider chọn cho S3-04 LLM Proxy | **Groq** (default) `llama-3.3-70b-versatile` + Claude Sonnet fallback khi socraticScore < 0.7 | Free tier đủ M1 dev + early beta. Tốc độ 300+ tok/s giảm latency tutor chat. Multi-provider routing thiết kế từ đầu. OpenAI defer hoàn toàn. |
 | 2026-04-26 | Token budget M1 chưa có per-sprint trip-wire | Per-sprint budget: S0=$5, S1=$8, S2=$8, S3=$15, S4=$15, S5=$5. Total $56, margin $24 | Catch drift sớm. Trip-wire per feature > $5 → STOP review. Per sprint vượt 50% → STOP review. |
+| 2026-04-26 | Prisma 7.x mới release đổi config (datasource url → prisma.config.ts + driver adapter). BLUEPRINT §4 schema viết theo classic syntax | **Prisma 6.19.x** (stable, classic config) | Prisma 7 cần adapter package + rewrite schema → tốn time setup, không match BLUEPRINT. Prisma 6 mature, fit ngay. Upgrade khi 7 ecosystem stabilize. |
+| 2026-04-26 | S0-02 Neon DB user provide chứa 504 rows project khác (UltraThink memory store) — risk catastrophic data loss nếu --accept-data-loss | DỪNG, ask user → user tạo Neon project mới (US-East), retry pass | **Pattern bất biến:** mọi `prisma db push` ra "drop table X (Y rows)" → STOP, verify project. KHÔNG tự dùng `--accept-data-loss`. README đã document warning. |
 
 
 ---
@@ -210,7 +210,7 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 ### Per-sprint budget (chốt 2026-04-26)
 | Sprint | Budget | Spent | Remaining |
 |---|---|---|---|
-| S0 Init | $5 | ~$1.0 (S0-01) | ~$4.0 |
+| S0 Init | $5 | ~$1.6 (S0-01 + S0-02) | ~$3.4 |
 | S1 Auth | $8 | $0 | $8 |
 | S2 Course | $8 | $0 | $8 |
 | S3 Sandbox | $15 | $0 | $15 |
@@ -225,7 +225,7 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 ### Quality indicators
 | Sprint | Features done | Bumpy rate | Stuck rate | Coverage delta | Bundle delta |
 |---|---|---|---|---|---|
-| S0 | 1/5 | 1/1 (lint config bug fixed in 1 retry) | 0% | — | web: 87.2 kB First Load JS |
+| S0 | 2/5 | 2/2 (S0-01 lint config; S0-02 Prisma 7→6 + DB safety pause) | 0% | — | web: 87.2 kB First Load JS |
 
 **Drift alert thresholds:**
 - Bumpy rate > 50% trong 5 feature liên tiếp → review spec
@@ -249,12 +249,17 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 > Mỗi session tạo 1 entry. Giúp debug khi loop kết quả không như mong đợi.
 
 ### Session #1 — 2026-04-26
-- **Started from feature:** P1 sanity check + P1.5 pre-build planning
-- **Completed:** 5 decisions chốt (sandbox WebContainers, monorepo 2 apps, Groq LLM, per-sprint budget, BLUEPRINT §17), CLAUDE.md v1.1, BLUEPRINT v1.1, PROGRESS update
-- **Next:** S0-01 chore/init-monorepo
-- **Blocked:** —
-- **Token spend:** ~30K input / ~12K output (planning phase)
-- **Notes:** WebContainers + TypeScript-only constraint sẽ ảnh hưởng course content design ở S2-01 (seed). Cần content phù hợp Node/TS ecosystem.
+- **Started from feature:** P1 sanity check + P1.5 pre-build planning + S0-01 build
+- **Completed:** 5 decisions chốt, docs v1.1, S0-01 (Turborepo + Next.js + NestJS), PR #1 merged
+- **Token spend:** ~50K/~18K
+- **Notes:** WebContainers + TS-only sẽ ảnh hưởng course design S2-01.
+
+### Session #2 — 2026-04-26
+- **Started from feature:** S0-02 chore/setup-database-connection
+- **Completed:** ConfigModule + Zod env validation, Prisma 6.19 scaffold, dotenv-cli wrapper, DB connection verified, README DB section
+- **Bumpy moments:** (1) Prisma 7 default install không support classic schema → downgrade 6.19. (2) User .env DB chứa data UltraThink → DỪNG, user tạo project Neon mới, retry pass.
+- **Token spend:** ~30K/~10K
+- **Next:** S0-03 chore/setup-prisma (copy full schema BLUEPRINT §4)
 
 ---
 

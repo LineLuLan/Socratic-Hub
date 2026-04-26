@@ -59,3 +59,5 @@ Thumbs.db
 # Misc
 *.pem
 .vercel
+
+PROMPT_SEQUENCE_V2.md

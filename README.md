@@ -19,10 +19,37 @@
 
 ## Setup
 
+### 1. Cài deps
+
 ```bash
 pnpm install
-cp .env.example .env   # điền DATABASE_URL (Neon) khi tới S0-02
-pnpm dev               # chạy cả apps/web (port 3000) và apps/api (port 4000)
+```
+
+### 2. Setup database (Neon Postgres)
+
+1. Tạo account + project tại https://console.neon.tech
+2. Copy connection string từ Neon dashboard (dạng `postgresql://user:pass@host/neondb?sslmode=require`)
+3. Tạo `.env` từ template:
+   ```bash
+   cp .env.example .env
+   ```
+4. Điền `DATABASE_URL` với connection string vừa copy
+5. Verify connection:
+   ```bash
+   pnpm --filter @socratic-hub/api db:check
+   # → DB OK: [ { ok: 1 } ]
+   ```
+6. Apply Prisma schema (S0-02 empty schema, S0-03 sẽ thêm models):
+   ```bash
+   pnpm --filter @socratic-hub/api prisma:db:push
+   ```
+
+⚠️ **Cảnh báo data:** Nếu `prisma db push` báo "drop table X (Y rows)" → DB không phải fresh. KHÔNG dùng `--accept-data-loss` mà chưa verify project Neon đúng. Tạo project Neon mới hoặc dùng schema namespace.
+
+### 3. Chạy dev
+
+```bash
+pnpm dev   # chạy cả apps/web (port 3000) và apps/api (port 4000)
 ```
 
 ## Apps
@@ -54,6 +81,13 @@ curl http://localhost:4000/health
 - `pnpm typecheck` — TypeScript check
 - `pnpm test` — chạy test (S0-01: stub, sẽ thêm Sprint 1+)
 - `pnpm verify` — full quality gate (lint + typecheck + test + build)
+
+### Database scripts (apps/api)
+
+- `pnpm --filter @socratic-hub/api db:check` — smoke test connection (`SELECT 1`)
+- `pnpm --filter @socratic-hub/api prisma:generate` — regenerate Prisma client
+- `pnpm --filter @socratic-hub/api prisma:db:push` — apply schema không qua migration (dev only)
+- `pnpm --filter @socratic-hub/api prisma:studio` — mở Prisma Studio GUI
 
 ## Documentation
 
