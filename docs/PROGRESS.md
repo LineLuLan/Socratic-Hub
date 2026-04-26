@@ -10,9 +10,9 @@
 
 **Milestone hiện tại:** M1 — "Hello Socratic"
 **Sprint trong milestone:** Sprint 0 — Init
-**Feature đang build:** S0-01 `chore/init-monorepo` (vừa start sau P1 planning)
-**Branch hiện tại:** main → sẽ tạo `chore/init-monorepo`
-**Last commit on main:** baseline pending (CLAUDE.md + docs/ + .claude/)
+**Feature đang build:** (S0-01 done — chờ PR review, next: S0-02 + S0-03 song song)
+**Branch hiện tại:** chore/init-monorepo (PR pending)
+**Last commit on main:** `4a66f80` docs: baseline blueprint + project conventions + skill audit
 **Last updated:** 2026-04-26
 **Last updated by:** Claude session #1 (post-P1 planning)
 
@@ -71,9 +71,10 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 
 ### Sprint 0: Init (target: 2 ngày)
 
-- [ ] **S0-01** `chore/init-monorepo` — Setup Turborepo skeleton, apps/web + apps/api
-  - Acceptance: `npm run dev` chạy được cả 2 apps
-  - Files: `package.json`, `turbo.json`, `apps/web/`, `apps/api/`
+- [x] **S0-01** `chore/init-monorepo` — Setup Turborepo skeleton, apps/web + apps/api ✅ DONE 2026-04-26
+  - Acceptance: ✅ `pnpm dev` chạy cả 2 apps. Web: HTTP 200 / Ready in 7.4s. API: `/health` OK.
+  - Files: `package.json`, `turbo.json`, `pnpm-workspace.yaml`, `.npmrc`, `apps/web/` (Next.js 14 + Tailwind), `apps/api/` (NestJS minimal)
+  - Verify: `pnpm verify` 8/8 tasks pass (lint + typecheck + test + build × 2 apps)
 
 - [ ]  S0-02 chore/setup-database-connection — Setup Neon connection + .env structure
 - Acceptance:
@@ -156,7 +157,7 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 
 > Format mỗi entry: `[ID] branch — date — PR# — 1 dòng tóm tắt — token spend (input/output)`
 
-(empty — chưa có feature nào hoàn thành)
+- **S0-01** `chore/init-monorepo` — 2026-04-26 — PR# (pending) — Turborepo + pnpm workspace, apps/web (Next.js 14 + Tailwind), apps/api (NestJS minimal với /health), pnpm verify 8/8 pass — token: ~50K/~18K
 
 ---
 
@@ -209,7 +210,7 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 ### Per-sprint budget (chốt 2026-04-26)
 | Sprint | Budget | Spent | Remaining |
 |---|---|---|---|
-| S0 Init | $5 | $0 | $5 |
+| S0 Init | $5 | ~$1.0 (S0-01) | ~$4.0 |
 | S1 Auth | $8 | $0 | $8 |
 | S2 Course | $8 | $0 | $8 |
 | S3 Sandbox | $15 | $0 | $15 |
@@ -224,7 +225,7 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 ### Quality indicators
 | Sprint | Features done | Bumpy rate | Stuck rate | Coverage delta | Bundle delta |
 |---|---|---|---|---|---|
-| S0 | 0/5 | 0% | 0% | — | — |
+| S0 | 1/5 | 1/1 (lint config bug fixed in 1 retry) | 0% | — | web: 87.2 kB First Load JS |
 
 **Drift alert thresholds:**
 - Bumpy rate > 50% trong 5 feature liên tiếp → review spec
