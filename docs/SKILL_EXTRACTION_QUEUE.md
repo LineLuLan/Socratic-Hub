@@ -45,6 +45,13 @@ Priority LOW (skip): score < 2
 - **Effort tạo skill:** S (~20 min — boilerplate + 1 example)
 - **Notes:** Có thể merge vào skill `env-vars` hiện có. Check skill `env-vars` xem đã có Zod example chưa, nếu chưa thì PR cải tiến thay vì tạo skill mới.
 
+### [S0-03] Prisma schema từ executable spec pattern
+- **Description:** BLUEPRINT viết schema sẵn dạng `prisma` code block. S0-03 copy verbatim → migration init đầu tiên không có drift. V2 entities preserved cho forward compat (schema-first principle).
+- **Đã dùng ở:** S0-03 (16 models / 9 enums từ §4)
+- **Sẽ dùng ở (estimate):** Mọi schema evolution sau (M2 lesson 2 sẽ thêm fields, M3 payment sẽ unlock IsaPayment usage)
+- **Effort tạo skill:** S (~30 min — document workflow "spec → schema → migration → controllers")
+- **Notes:** Có thể là addon cho skill `prisma`. Pattern: KHÔNG bao giờ viết schema không có spec. Schema-first nguyên tắc trong BLUEPRINT §14.
+
 ### [S0-02] DB destructive-op safety check pattern
 - **Description:** Trước khi chạy `prisma db push` lần đầu trên DB lạ, query `pg_tables WHERE schemaname='public'` để liệt kê tables. Nếu có tables → STOP, verify project. Document trong README warning.
 - **Đã dùng ở:** S0-02 (caught UltraThink data store)
