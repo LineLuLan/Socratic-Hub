@@ -10,9 +10,11 @@
 
 **Milestone hiện tại:** M1 — "Hello Socratic"
 **Sprint trong milestone:** Sprint 0 — Init
-**Feature đang build:** (S0-02 done — chờ PR review, next: S0-03 Prisma full schema)
-**Branch hiện tại:** chore/setup-database-connection (PR pending)
-**Last commit on main:** `74532a5` Merge pull request #3 (S0-01 + baseline)
+**Feature đang build:** (S0-03 done — chờ PR review, next: S0-04 CI)
+**Branch hiện tại:** chore/setup-prisma (PR pending)
+**Last commit on dev:** `815eab9` Merge PR #5 (S0-02)
+**Last commit on main:** `74532a5` Merge PR #3 (S0-01 + baseline)
+**Workflow note:** user dùng `dev` integration branch, `main` release. Feature → PR vào dev.
 **Last updated:** 2026-04-26 (session #2)
 **Last updated by:** Claude session #2
 
@@ -82,9 +84,10 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
   - Smoke: `db:check` → `[ { ok: 1 } ]`, `/health` → `databaseConfigured: true`
   - Stack: Prisma 6.19.3 (downgrade từ 7 vì 7 đổi schema config sang prisma.config.ts), @nestjs/config 4, zod 4, dotenv-cli 11
 
-- [ ] **S0-03** `chore/setup-prisma` — Init Prisma, copy schema mục 4 BLUEPRINT
-  - Acceptance: `npx prisma migrate dev` thành công, generate client OK
-  - Files: `apps/api/prisma/schema.prisma`, migration đầu tiên
+- [x] **S0-03** `chore/setup-prisma` — Init Prisma, copy schema mục 4 BLUEPRINT ✅ DONE 2026-04-26
+  - Acceptance: ✅ `prisma migrate dev --name init` tạo migration `20260426163035_init` + applied to Neon ✅ Prisma client v6.19.3 generated ✅ 16 tables tạo trong DB
+  - Files: `apps/api/prisma/schema.prisma` (full §4: 16 models + 9 enums), `apps/api/prisma/migrations/20260426163035_init/migration.sql`
+  - Verify: `pnpm verify` 8/8 pass. V2 entities (IsaContract, IsaPayment, B2BAccount, ObcContract, ObcMilestone) included for forward compat — controllers defer.
 
 - [ ] **S0-04** `chore/setup-ci` — GitHub Actions với verify gate
   - Acceptance: PR mở thấy CI chạy, fail nếu lint/typecheck/test fail
@@ -155,7 +158,8 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 > Format mỗi entry: `[ID] branch — date — PR# — 1 dòng tóm tắt — token spend (input/output)`
 
 - **S0-01** `chore/init-monorepo` — 2026-04-26 — PR #1 — Turborepo + pnpm workspace, apps/web (Next.js 14 + Tailwind), apps/api (NestJS minimal với /health), pnpm verify 8/8 pass — token: ~50K/~18K
-- **S0-02** `chore/setup-database-connection` — 2026-04-26 — PR# (pending) — ConfigModule + Zod env validation, Prisma 6.19 scaffold, dotenv-cli wrapper cho monorepo .env, Neon connection verified (DB OK [{ok:1}]) — token: ~30K/~10K
+- **S0-02** `chore/setup-database-connection` — 2026-04-26 — PR #4 (merged dev) — ConfigModule + Zod env validation, Prisma 6.19 scaffold, dotenv-cli wrapper, Neon connection verified — token: ~30K/~10K
+- **S0-03** `chore/setup-prisma` — 2026-04-26 — PR# (pending) — Full schema BLUEPRINT §4 (16 models, 9 enums), migration `20260426163035_init` applied tới Neon, V2 entities included forward compat — token: ~25K/~10K
 
 ---
 
@@ -210,7 +214,7 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 ### Per-sprint budget (chốt 2026-04-26)
 | Sprint | Budget | Spent | Remaining |
 |---|---|---|---|
-| S0 Init | $5 | ~$1.6 (S0-01 + S0-02) | ~$3.4 |
+| S0 Init | $5 | ~$2.1 (S0-01 + S0-02 + S0-03) | ~$2.9 |
 | S1 Auth | $8 | $0 | $8 |
 | S2 Course | $8 | $0 | $8 |
 | S3 Sandbox | $15 | $0 | $15 |
@@ -225,7 +229,7 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 ### Quality indicators
 | Sprint | Features done | Bumpy rate | Stuck rate | Coverage delta | Bundle delta |
 |---|---|---|---|---|---|
-| S0 | 2/5 | 2/2 (S0-01 lint config; S0-02 Prisma 7→6 + DB safety pause) | 0% | — | web: 87.2 kB First Load JS |
+| S0 | 3/5 | 2/3 (S0-03 zero retry — schema copy clean) | 0% | — | web: 87.2 kB / DB: 16 tables migrated |
 
 **Drift alert thresholds:**
 - Bumpy rate > 50% trong 5 feature liên tiếp → review spec
@@ -256,10 +260,10 @@ S0-01 → (S0-02 + S0-03 song song) → S0-04 → S0-05
 
 ### Session #2 — 2026-04-26
 - **Started from feature:** S0-02 chore/setup-database-connection
-- **Completed:** ConfigModule + Zod env validation, Prisma 6.19 scaffold, dotenv-cli wrapper, DB connection verified, README DB section
-- **Bumpy moments:** (1) Prisma 7 default install không support classic schema → downgrade 6.19. (2) User .env DB chứa data UltraThink → DỪNG, user tạo project Neon mới, retry pass.
-- **Token spend:** ~30K/~10K
-- **Next:** S0-03 chore/setup-prisma (copy full schema BLUEPRINT §4)
+- **Completed:** S0-02 (ConfigModule + Zod, Prisma scaffold, DB verified) → PR #4 merged dev. Then S0-03 (full schema §4, migration init) → PR pending.
+- **Bumpy moments:** (1) Prisma 7 → 6 downgrade. (2) DB safety pause — user tạo Neon project mới.
+- **Token spend:** ~55K/~20K (cả 2 features)
+- **Next:** S0-04 chore/setup-ci (GitHub Actions verify gate)
 
 ---
 

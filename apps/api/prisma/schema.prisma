@@ -1,6 +1,7 @@
 // Socratic Hub — Prisma schema
-// S0-02: minimal datasource block to verify Neon connection.
-// S0-03 will copy full schema from BLUEPRINT §4.
+// Source: docs/SOCRATIC_HUB_BLUEPRINT.md §4 (Database schema [MVP])
+// S0-03: full schema copied verbatim. V2 entities (IsaContract, ObcContract,
+// B2BAccount, ObcMilestone) included for forward compat — controllers/UI defer.
 
 generator client {
   provider        = "prisma-client-js"
@@ -10,4 +11,336 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// User & Auth
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  fullName      String
+  role          Role      @default(STUDENT)
+  avatarUrl     String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  enrollments   Enrollment[]
+  submissions   Submission[]
+  tutorSessions TutorSession[]
+  certificates  Certificate[]
+  isaContract   IsaContract?
+  leadProfile   Lead?
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+  B2B_ADMIN
+}
+
+// ─────────────────────────────────────────────
+// Course catalogue
+// ─────────────────────────────────────────────
+
+model Course {
+  id           String      @id @default(cuid())
+  slug         String      @unique
+  title        String
+  subtitle     String?
+  description  String      @db.Text
+  level        CourseLevel
+  thumbnailUrl String?
+  priceVnd     Int
+  isaEligible  Boolean     @default(false)
+  obcEligible  Boolean     @default(false)
+  publishedAt  DateTime?
+  createdAt    DateTime    @default(now())
+
+  modules     Module[]
+  enrollments Enrollment[]
+}
+
+enum CourseLevel {
+  FOUNDATION
+  LLM_BASICS
+  RAG
+  AGENT_CORE
+  PRODUCTION
+}
+
+model Module {
+  id       String @id @default(cuid())
+  courseId String
+  title    String
+  order    Int
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@index([courseId, order])
+}
+
+model Lesson {
+  id             String       @id @default(cuid())
+  moduleId       String
+  slug           String
+  title          String
+  order          Int
+  type           LessonType
+  contentMd      String       @db.Text
+  starterRepoRef String?
+  estimatedMin   Int
+  deliveryMode   DeliveryMode @default(ONLINE_SELF_PACED)
+
+  module      Module       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+
+  @@unique([moduleId, slug])
+  @@index([moduleId, order])
+}
+
+enum LessonType {
+  CONCEPT
+  GUIDED_LAB
+  CHALLENGE
+  REFLECTION
+}
+
+enum DeliveryMode {
+  ONLINE_SELF_PACED
+  LIVE_SUPERVISED
+  OFFLINE_CAPSTONE
+}
+
+// ─────────────────────────────────────────────
+// Assignment & Grading
+// ─────────────────────────────────────────────
+
+model Assignment {
+  id            String @id @default(cuid())
+  lessonId      String
+  title         String
+  instructionMd String @db.Text
+  graderConfig  Json
+  passThreshold Int    @default(70)
+  maxAttempts   Int?
+
+  lesson      Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+}
+
+model Submission {
+  id           String           @id @default(cuid())
+  assignmentId String
+  userId       String
+  sandboxId    String?
+  artifactRef  String
+  status       SubmissionStatus @default(PENDING)
+  score        Int?
+  graderOutput Json?
+  submittedAt  DateTime         @default(now())
+  gradedAt     DateTime?
+
+  assignment    Assignment     @relation(fields: [assignmentId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  tutorMessages TutorMessage[]
+
+  @@index([userId, submittedAt])
+}
+
+enum SubmissionStatus {
+  PENDING
+  GRADING
+  PASSED
+  FAILED
+  ERROR
+}
+
+// ─────────────────────────────────────────────
+// Enrollment & Progress
+// ─────────────────────────────────────────────
+
+model Enrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  courseId    String
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+// ─────────────────────────────────────────────
+// Socratic AI Tutor
+// ─────────────────────────────────────────────
+
+model TutorSession {
+  id        String    @id @default(cuid())
+  userId    String
+  lessonId  String?
+  context   Json
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  user     User           @relation(fields: [userId], references: [id])
+  messages TutorMessage[]
+}
+
+model TutorMessage {
+  id            String    @id @default(cuid())
+  sessionId     String
+  submissionId  String?
+  role          TutorRole
+  content       String    @db.Text
+  socraticScore Float?
+  createdAt     DateTime  @default(now())
+
+  session    TutorSession @relation(fields: [sessionId], references: [id])
+  submission Submission?  @relation(fields: [submissionId], references: [id])
+}
+
+enum TutorRole {
+  USER
+  TUTOR
+  SYSTEM
+}
+
+// ─────────────────────────────────────────────
+// Certificate
+// ─────────────────────────────────────────────
+
+model Certificate {
+  id                String   @id @default(cuid())
+  userId            String
+  courseId          String
+  issuedAt          DateTime @default(now())
+  blockchainTxHash  String?
+  blockchainNetwork String?
+  publicId          String   @unique
+  pdfUrl            String?
+  vqfLevelMapping   String?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ─────────────────────────────────────────────
+// Funnel & CRM
+// ─────────────────────────────────────────────
+
+model Lead {
+  id             String      @id @default(cuid())
+  userId         String?     @unique
+  email          String
+  fullName       String?
+  source         String?
+  utm            Json?
+  leadScore      Int         @default(0)
+  stage          FunnelStage @default(AWARENESS)
+  appliedAt      DateTime?
+  consultationAt DateTime?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([email])
+}
+
+enum FunnelStage {
+  AWARENESS
+  NURTURE
+  WEBINAR_REGISTERED
+  APPLIED
+  CONSULTATION_BOOKED
+  CONVERTED
+  LOST
+}
+
+// ─────────────────────────────────────────────
+// ISA — V2 (schema preserved cho forward compat)
+// ─────────────────────────────────────────────
+
+model IsaContract {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  courseId       String
+  signedAt       DateTime  @default(now())
+  startedAt      DateTime?
+  sharePct       Decimal   @db.Decimal(5, 2)
+  durationMonths Int
+  minSalaryVnd   Int
+  capVnd         Int?
+  status         IsaStatus @default(DRAFT)
+
+  user     User         @relation(fields: [userId], references: [id])
+  payments IsaPayment[]
+}
+
+enum IsaStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CAPPED
+  DEFAULTED
+}
+
+model IsaPayment {
+  id                String    @id @default(cuid())
+  contractId        String
+  monthIndex        Int
+  reportedSalaryVnd Int
+  amountDueVnd      Int
+  paidAt            DateTime?
+
+  contract IsaContract @relation(fields: [contractId], references: [id])
+
+  @@unique([contractId, monthIndex])
+}
+
+// ─────────────────────────────────────────────
+// OBC — V2 (schema preserved cho forward compat)
+// ─────────────────────────────────────────────
+
+model B2BAccount {
+  id           String @id @default(cuid())
+  name         String
+  contactEmail String
+
+  obcContracts ObcContract[]
+}
+
+model ObcContract {
+  id            String   @id @default(cuid())
+  accountId     String
+  totalValueVnd Int
+  signedAt      DateTime @default(now())
+
+  account    B2BAccount     @relation(fields: [accountId], references: [id])
+  milestones ObcMilestone[]
+}
+
+model ObcMilestone {
+  id         String          @id @default(cuid())
+  contractId String
+  title      String
+  criteria   Json
+  amountVnd  Int
+  status     MilestoneStatus @default(PENDING)
+  achievedAt DateTime?
+
+  contract ObcContract @relation(fields: [contractId], references: [id])
+}
+
+enum MilestoneStatus {
+  PENDING
+  ACHIEVED
+  INVOICED
+  PAID
 }

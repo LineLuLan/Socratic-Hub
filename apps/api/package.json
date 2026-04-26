@@ -13,6 +13,9 @@
     "postinstall": "prisma generate",
     "prisma:generate": "dotenv -e ../../.env -- prisma generate",
     "prisma:db:push": "dotenv -e ../../.env -- prisma db push",
+    "prisma:migrate:dev": "dotenv -e ../../.env -- prisma migrate dev",
+    "prisma:migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "prisma:migrate:reset": "dotenv -e ../../.env -- prisma migrate reset",
     "prisma:studio": "dotenv -e ../../.env -- prisma studio",
     "db:check": "dotenv -e ../../.env -- node -e \"const{PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.$queryRaw`SELECT 1 as ok`.then(r=>{console.log('DB OK:',r);process.exit(0)}).catch(e=>{console.error('DB FAIL:',e.message);process.exit(1)})\""
   },
