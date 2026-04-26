@@ -31,7 +31,26 @@ Priority LOW (skip): score < 2
 > - Notes: ...
 > ```
 
-(empty — sẽ populate khi build)
+### [S0-02] Monorepo .env loader pattern (`dotenv-cli` wrapper for Prisma + Nest)
+- **Description:** Trong Turborepo monorepo có root `.env`, các app cần load env từ root khi chạy CLI tools (Prisma, NestJS). Dùng `dotenv -e ../../.env -- <cmd>` wrapper trong package.json scripts. NestJS ConfigModule.envFilePath array để cover cả 2 vị trí.
+- **Đã dùng ở:** S0-02
+- **Sẽ dùng ở (estimate):** S0-03 (prisma migrate dev), S1-01..S1-04 (auth env), S3-04 (LLM proxy env), S4-02 (Redis worker)
+- **Effort tạo skill:** S (~30 min — pattern rõ, ít edge case)
+- **Notes:** Alternative: per-app `.env` (Next.js style). Quyết định root `.env` cho M1 vì single source of truth, ít confusion. Pattern cũng applicable cho turbo `globalDependencies: [".env"]` để cache invalidation.
+
+### [S0-02] Zod env validation với fail-fast pattern
+- **Description:** `validateEnv(config)` function dùng `z.safeParse` → throw rich error message với `path.message` từng field. Register vào `ConfigModule.forRoot({validate: validateEnv})`. App boot fail ngay nếu env sai thay vì runtime.
+- **Đã dùng ở:** S0-02 (DATABASE_URL, NODE_ENV, PORT)
+- **Sẽ dùng ở (estimate):** S1-01 (BETTER_AUTH_SECRET), S3-04 (GROQ_API_KEY), S4-02 (REDIS_URL)
+- **Effort tạo skill:** S (~20 min — boilerplate + 1 example)
+- **Notes:** Có thể merge vào skill `env-vars` hiện có. Check skill `env-vars` xem đã có Zod example chưa, nếu chưa thì PR cải tiến thay vì tạo skill mới.
+
+### [S0-02] DB destructive-op safety check pattern
+- **Description:** Trước khi chạy `prisma db push` lần đầu trên DB lạ, query `pg_tables WHERE schemaname='public'` để liệt kê tables. Nếu có tables → STOP, verify project. Document trong README warning.
+- **Đã dùng ở:** S0-02 (caught UltraThink data store)
+- **Sẽ dùng ở (estimate):** S0-03 (first migration), S5-* (production prep)
+- **Effort tạo skill:** S (~20 min — script + checklist)
+- **Notes:** Generic pattern cho mọi project share DB infra. Có thể là addon cho skill `prisma` hoặc `postgresql`. KHÔNG nên tạo skill mới riêng (anti-pattern: skill chỉ dùng 1-2 lần).
 
 ---
 
